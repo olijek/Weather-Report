@@ -11,7 +11,6 @@ class HomeScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // ===== Верх =====
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -65,7 +64,6 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // ===== Прогноз на 3 дня =====
               _card(
                 title: 'Weather forecast for 3 days',
                 child: Column(
@@ -79,7 +77,6 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ===== Прогноз на 24 часа =====
               _card(
                 title: 'Forecast for 24 hours',
                 child: Column(
@@ -121,7 +118,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ===== Карточка =====
   static Widget _card({required String title, required Widget child}) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -148,8 +144,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
-// ===== Виджеты =====
 
 class _DayForecast extends StatelessWidget {
   final String day;
