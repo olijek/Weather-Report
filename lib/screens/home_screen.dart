@@ -11,19 +11,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const String _apiKey = 'a9f4757b38b44ebe98b115055262701';
-  static const String _cityQuery = 'Karaganda'; //задать город
+
+  // Города для выбора
+  final List<String> _cities = [
+    'Karaganda',
+    'Astana',
+    'Almaty',
+    'Shymkent',
+    'Aktobe',
+  ];
+
+  String _selectedCity = 'Karaganda';
 
   late Future<Map<String, dynamic>> _weatherFuture;
 
   @override
   void initState() {
     super.initState();
-    _weatherFuture = _fetchWeatherNow();
+    _weatherFuture = _fetchWeatherForecast();
   }
 
-  Future<Map<String, dynamic>> _fetchWeatherNow() async {
+  Future<Map<String, dynamic>> _fetchWeatherForecast() async {
     final url = Uri.parse(
-      'https://api.weatherapi.com/v1/current.json?key=$_apiKey&q=$_cityQuery&lang=ru',
+      'https://api.weatherapi.com/v1/forecast.json?key=$_apiKey&q=$_selectedCity&days=3&aqi=no&alerts=no&lang=ru',
     );
 
     final response = await http.get(url);
@@ -35,6 +45,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _formatHour(String timeStr) {
+    final dt = DateTime.tryParse(timeStr);
+    if (dt == null) return '--:--';
+    final h = dt.hour.toString().padLeft(2, '0');
+    return '$h:00';
+  }
+
+  String _formatDayName(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return dateStr;
+
+    const names = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+
+    return names[dt.weekday - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,17 +78,49 @@ class _HomeScreenState extends State<HomeScreen> {
           child: FutureBuilder<Map<String, dynamic>>(
             future: _weatherFuture,
             builder: (context, snapshot) {
-              //плейсхолдеры
-              String cityText = 'KARAGANDA.KZ';
+              // плейсхолдеры
               String tempText = '-8°';
+              String conditionText = 'Loading...';
+              String conditionIconUrl = '';
+
+              // forecast data
+              List<dynamic> forecastDays = [];
+              List<dynamic> todayHours = [];
+              int startHourIndex = 0;
 
               if (snapshot.hasData) {
                 final data = snapshot.data!;
-                final city = data['location']['name'];
-                final tempC = data['current']['temp_c'];
 
-                cityText = (city.toString().toUpperCase()) + '.KZ';
+                // current
+                final current = data['current'] as Map<String, dynamic>;
+                final tempC = current['temp_c'];
+
+                final condition =
+                current['condition'] as Map<String, dynamic>;
+
+                final icon = condition['icon']?.toString() ?? '';
+                conditionIconUrl =
+                icon.startsWith('http') ? icon : 'https:$icon';
+
+                conditionText = condition['text']?.toString() ?? '---';
                 tempText = '${(tempC as num).toStringAsFixed(0)}°';
+
+                // local time -> чтобы 24 часа начинались с текущего времени
+                final location = data['location'] as Map<String, dynamic>;
+                final localtimeStr = location['localtime']?.toString() ?? '';
+                final localtime = DateTime.tryParse(localtimeStr);
+                if (localtime != null) {
+                  startHourIndex = localtime.hour;
+                }
+
+                // forecast
+                final forecast = data['forecast'] as Map<String, dynamic>;
+                forecastDays = forecast['forecastday'] as List<dynamic>;
+
+                // today hours
+                if (forecastDays.isNotEmpty) {
+                  todayHours = forecastDays[0]['hour'] as List<dynamic>;
+                }
               }
 
               return Column(
@@ -67,13 +133,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              cityText,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                letterSpacing: 1.2,
+                            // ВЫБОР ГОРОДА
+                            DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedCity,
+                                dropdownColor: const Color(0xFF5E88A5),
+                                icon: const Icon(Icons.keyboard_arrow_down,
+                                    color: Colors.white70),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  letterSpacing: 1.2,
+                                ),
+                                items: _cities.map((city) {
+                                  return DropdownMenuItem(
+                                    value: city,
+                                    child: Text(city.toUpperCase()),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value == null) return;
+                                  setState(() {
+                                    _selectedCity = value;
+                                    _weatherFuture = _fetchWeatherForecast();
+                                  });
+                                },
                               ),
                             ),
+
                             IconButton(
                               icon: const Icon(Icons.more_vert,
                                   color: Colors.white),
@@ -98,12 +184,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 10),
 
                         Row(
-                          children: const [
-                            Icon(Icons.cloudy_snowing, color: Colors.white),
-                            SizedBox(width: 8),
+                          children: [
+                            // ИКОНКА ИЗ API
+                            if (conditionIconUrl.isNotEmpty)
+                              Image.network(
+                                conditionIconUrl,
+                                width: 28,
+                                height: 28,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.wb_sunny,
+                                      color: Colors.white);
+                                },
+                              )
+                            else
+                              const Icon(Icons.cloudy_snowing,
+                                  color: Colors.white),
+
+                            const SizedBox(width: 8),
+
+                            // ТЕКУЩАЯ ПОГОДА ИЗ API
                             Text(
-                              'Snow  -1° / -14°',
-                              style: TextStyle(color: Colors.white),
+                              conditionText,
+                              style: const TextStyle(color: Colors.white),
                             ),
                           ],
                         ),
@@ -113,47 +215,121 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 20),
 
+                  // ✅ 3 DAYS FORECAST ИЗ API
                   _card(
                     title: 'Weather forecast for 3 days',
-                    child: Column(
-                      children: const [
-                        _DayForecast('Monday', Icons.cloudy_snowing, '-14° / -1°'),
-                        _DayForecast('Tuesday', Icons.cloud, '-21° / -10°'),
-                        _DayForecast('Wednesday', Icons.sunny, '-24° / -16°'),
-                      ],
+                    child: (forecastDays.isEmpty)
+                        ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Loading...',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    )
+                        : Column(
+                      children: List.generate(
+                        forecastDays.length > 3 ? 3 : forecastDays.length,
+                            (index) {
+                          final day =
+                          forecastDays[index] as Map<String, dynamic>;
+
+                          final dateStr = day['date']?.toString() ?? '';
+                          final dayName = _formatDayName(dateStr);
+
+                          final dayData =
+                          day['day'] as Map<String, dynamic>;
+
+                          final minTemp =
+                          (dayData['mintemp_c'] as num)
+                              .toStringAsFixed(0);
+                          final maxTemp =
+                          (dayData['maxtemp_c'] as num)
+                              .toStringAsFixed(0);
+
+                          // можно позже заменить на Image.network, но оставим твой стиль
+                          final condition =
+                          dayData['condition'] as Map<String, dynamic>;
+                          final text =
+                              condition['text']?.toString() ?? '';
+
+                          IconData iconData = Icons.cloud;
+                          final t = text.toLowerCase();
+                          if (t.contains('sun') ||
+                              t.contains('ясно') ||
+                              t.contains('солне')) {
+                            iconData = Icons.sunny;
+                          } else if (t.contains('snow') ||
+                              t.contains('снег')) {
+                            iconData = Icons.cloudy_snowing;
+                          } else if (t.contains('rain') ||
+                              t.contains('дожд')) {
+                            iconData = Icons.umbrella;
+                          } else if (t.contains('cloud') ||
+                              t.contains('облач')) {
+                            iconData = Icons.cloud;
+                          }
+
+                          return _DayForecast(
+                            dayName,
+                            iconData,
+                            '$minTemp° / $maxTemp°',
+                          );
+                        },
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
+                  // ✅ 24 HOURS FORECAST С ТЕКУЩЕГО ВРЕМЕНИ
                   _card(
                     title: 'Forecast for 24 hours',
-                    child: Column(
+                    child: (todayHours.isEmpty)
+                        ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Loading...',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    )
+                        : Column(
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            _Temp('-5°'),
-                            _Temp('-6°'),
-                            _Temp('-7°'),
-                            _Temp('-7°'),
-                            _Temp('-7°'),
-                            _Temp('-9°'),
-                            _Temp('-11°'),
-                          ],
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                          children: List.generate(() {
+                            final available =
+                                todayHours.length - startHourIndex;
+                            final count = available > 7 ? 7 : available;
+                            return count;
+                          }(), (index) {
+                            final hour = todayHours[startHourIndex + index]
+                            as Map<String, dynamic>;
+                            final temp = hour['temp_c'] as num;
+                            return _Temp('${temp.toStringAsFixed(0)}°');
+                          }),
                         ),
                         const SizedBox(height: 12),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            _Hour('Now'),
-                            _Hour('13:00'),
-                            _Hour('14:00'),
-                            _Hour('15:00'),
-                            _Hour('16:00'),
-                            _Hour('17:00'),
-                            _Hour('18:00'),
-                          ],
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                          children: List.generate(() {
+                            final available =
+                                todayHours.length - startHourIndex;
+                            final count = available > 7 ? 7 : available;
+                            return count;
+                          }(), (index) {
+                            final hour = todayHours[startHourIndex + index]
+                            as Map<String, dynamic>;
+                            final timeStr = hour['time']?.toString() ?? '';
+                            final label =
+                            index == 0 ? 'Now' : _formatHour(timeStr);
+                            return _Hour(label);
+                          }),
                         ),
                       ],
                     ),
