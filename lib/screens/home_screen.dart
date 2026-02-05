@@ -57,13 +57,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (dt == null) return dateStr;
 
     const names = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
+      'Понедельник',
+      'Вторник',
+      'Среда',
+      'Четверг',
+      'Пятница',
+      'Суббота',
+      'Воскресенье'
     ];
 
     return names[dt.weekday - 1];
@@ -217,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // ✅ 3 DAYS FORECAST ИЗ API
                   _card(
-                    title: 'Weather forecast for 3 days',
+                    title: 'Прогноз погоды на 3 дня',
                     child: (forecastDays.isEmpty)
                         ? const Center(
                       child: Padding(
@@ -248,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           (dayData['maxtemp_c'] as num)
                               .toStringAsFixed(0);
 
-                          // можно позже заменить на Image.network, но оставим твой стиль
+
                           final condition =
                           dayData['condition'] as Map<String, dynamic>;
                           final text =
@@ -258,16 +258,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           final t = text.toLowerCase();
                           if (t.contains('sun') ||
                               t.contains('ясно') ||
-                              t.contains('солне')) {
+                              t.contains('солнечно')) {
                             iconData = Icons.sunny;
                           } else if (t.contains('snow') ||
                               t.contains('снег')) {
                             iconData = Icons.cloudy_snowing;
                           } else if (t.contains('rain') ||
-                              t.contains('дожд')) {
+                              t.contains('дождь')) {
                             iconData = Icons.umbrella;
                           } else if (t.contains('cloud') ||
-                              t.contains('облач')) {
+                              t.contains('облачно')) {
                             iconData = Icons.cloud;
                           }
 
@@ -283,9 +283,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ✅ 24 HOURS FORECAST С ТЕКУЩЕГО ВРЕМЕНИ
+
                   _card(
-                    title: 'Forecast for 24 hours',
+                    title: 'Прогноз на 24 часа',
                     child: (todayHours.isEmpty)
                         ? const Center(
                       child: Padding(
