@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -41,8 +42,34 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
 
+            // 🔔 УВЕДОМЛЕНИЯ
             const SizedBox(height: 24),
+            const Text(
+              'Notifications',
+              style: TextStyle(color: Colors.white54),
+            ),
+            const SizedBox(height: 8),
 
+            _card(
+              children: [
+                ListTile(
+                  title: const Text(
+                    'Test notification',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  trailing: const Icon(Icons.notifications_active,
+                      color: Colors.white70),
+                  onTap: () {
+                    NotificationService.showSimpleNotification(
+                      "Погода обновилась",
+                      "В Караганде сейчас солнечно ☀️",
+                    );
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
             const Text(
               'About app',
               style: TextStyle(color: Colors.white54),
