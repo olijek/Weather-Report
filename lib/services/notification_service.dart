@@ -2,26 +2,24 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../main.dart';
 
 class NotificationService {
-  static Future<void> showSimpleNotification(
-      String title, String body) async {
+  static Future<void> showWeatherNotification(
+      String city, String temp, String condition) async {
 
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'weather_channel',
-      'Weather Notifications',
-      channelDescription: 'Weather alerts',
+      'Weather Updates',
+      channelDescription: 'Weather update notifications',
       importance: Importance.max,
       priority: Priority.high,
     );
 
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-    );
+    const details = NotificationDetails(android: androidDetails);
 
     await notificationsPlugin.show(
-      id: 1,
-      title: title,
-      body: body,
-      notificationDetails: notificationDetails,
+      id: 0,
+      title: 'Погода обновлена',
+      body: '$city: $temp, $condition',
+      notificationDetails:  details,
     );
   }
 }
